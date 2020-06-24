@@ -13,4 +13,4 @@ Above is graphed data from a 134MB file (8.4 million data entries). Following im
 
 ![Less data points but identical to above](_assets/smolbig.png)
 
-Data has been reduced over a hundredfold.
+Data has been reduced over twohundredfold.
