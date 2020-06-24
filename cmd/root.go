@@ -30,6 +30,7 @@ const bufferSize = 3
 // flags
 var tolerance float64 = 0.1 // default for tests
 var xFlag, yFlag, inputSeparator, outputName, outputExtension, floatFormat string
+var commaReplacement = ";"
 var interp, enforceComma, silent bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -87,10 +88,15 @@ func run(args []string) error {
 	rdr.Comma = rune(inputSeparator[0])
 	rdr.TrimLeadingSpace = true
 	headers, err := rdr.Read()
+	if enforceComma && inputSeparator != "," {
+		for i := range headers {
+			headers[i] = strings.ReplaceAll(headers[i], ",", commaReplacement)
+		}
+	}
 	if findNumerical(headers) >= 0 {
 		return fmt.Errorf("numerical header entry found: %s", headers[findNumerical(headers)])
 	}
-	yColsSplit := splitYcols(yFlag)
+	yColsSplit := splitColumns(yFlag)
 	// if we are looking for all columns, "*" as -y flag
 	if yColsSplit[0] == "*" && len(yColsSplit) == 1 {
 		yColsSplit = []string{}
@@ -133,11 +139,11 @@ func run(args []string) error {
 		if !enforceComma {
 			j.Writer.Comma = rune(inputSeparator[0])
 		}
-		err = j.Write([]string{j.yname,j.xname})
+		err = j.Write([]string{j.yname, j.xname})
 		if err != nil {
 			return err
 		}
-		alert("creating file %s",getJobName(j))
+		alert("creating file %s", getJobName(j))
 		jobs = append(jobs, &j)
 	}
 	// begin doing the heavy lifting
@@ -198,7 +204,7 @@ func checkParameters(args []string) error {
 		return errors.New("requires exactly one argument as input filename")
 	}
 	// y columns
-	ycols := splitYcols(yFlag)
+	ycols := splitColumns(yFlag)
 	if len(ycols) < 1 || yFlag == "" {
 		return errors.New("found no y-column flag value")
 	}
@@ -210,12 +216,12 @@ func checkParameters(args []string) error {
 	if len(inputSeparator) > 1 {
 		return errors.New("delimiter should be one character. '\\t' and 'tab' work as an option")
 	}
-	commaReplacement := ";"
 	if inputSeparator == commaReplacement {
 		commaReplacement = "."
 	}
 	if enforceComma && inputSeparator != "," {
 		yFlag = strings.ReplaceAll(yFlag, ",", commaReplacement)
+		xFlag = strings.ReplaceAll(xFlag, ",", commaReplacement)
 	}
 	// output name forming
 	var iname string
@@ -246,7 +252,6 @@ func init() {
 	_ = rootCmd.MarkFlagRequired("xcol")
 	rootCmd.Flags().BoolVarP(&interp, "interp", "i", false, "Use interpolator algorithm. Downsampling is more aggressive at the cost of changing point y values")
 	rootCmd.Flags().BoolVarP(&silent, "silent", "s", false, "Silent execution (no printing).")
-
 }
 
 func findStringInSlice(sli []string, s string) int {
@@ -258,7 +263,7 @@ func findStringInSlice(sli []string, s string) int {
 	return -1
 }
 
-func splitYcols(y string) []string {
+func splitColumns(y string) []string {
 	s := strings.Split(yFlag, inputSeparator)
 	return s
 }
