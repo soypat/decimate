@@ -5,3 +5,12 @@ Need to graph a curve obtained through a simulation and the amount of points mak
 Decimate will reduce the amount of points on your curve drastically while maintaining visual fidelity.
 
 ### Decimate is run from command line
+
+## Example
+
+![Lots of data points](_assets/bigbig.png)
+Above is graphed data from a 134MB file (8.4 million data entries). Following image is downsampled data using decimate (0.1 tolerance). Resulting files have a collective size of less than a megabyte.
+
+![Less data points but identical to above](_assets/smolbig.png)
+
+Data has been reduced over a hundredfold.
