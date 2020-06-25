@@ -31,7 +31,7 @@ const bufferSize = 3
 var tolerance float64 = 0.1 // default for tests
 var xFlag, yFlag, inputSeparator, outputName, outputExtension, floatFormat string
 var commaReplacement = ";"
-var interp, enforceComma, silent bool
+var interp, enforceComma, silent, noHeader bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -139,7 +139,9 @@ func run(args []string) error {
 		if !enforceComma {
 			j.Writer.Comma = rune(inputSeparator[0])
 		}
-		err = j.Write([]string{j.yname, j.xname})
+		if !noHeader {
+			err = j.Write([]string{j.yname, j.xname})
+		}
 		if err != nil {
 			return err
 		}
@@ -252,6 +254,8 @@ func init() {
 	_ = rootCmd.MarkFlagRequired("xcol")
 	rootCmd.Flags().BoolVarP(&interp, "interp", "i", false, "Use interpolator algorithm. Downsampling is more aggressive at the cost of changing point y values")
 	rootCmd.Flags().BoolVarP(&silent, "silent", "s", false, "Silent execution (no printing).")
+	rootCmd.Flags().BoolVarP(&noHeader, "headerless", "n", false, "If set does not print headers in new file.")
+
 }
 
 func findStringInSlice(sli []string, s string) int {
