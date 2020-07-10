@@ -25,8 +25,6 @@ import (
 	"strings"
 )
 
-const bufferSize = 3
-
 // flags
 var tolerance float64 = 0.1 // default for tests
 var xFlag, yFlag, inputSeparator, outputName, outputExtension, floatFormat string
