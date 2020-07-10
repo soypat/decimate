@@ -30,10 +30,12 @@ import (
 // joinCmd represents the join command
 var joinCmd = &cobra.Command{
 	Use:   "join",
-	Short: "join .csv files in current directory into one",
+	Short: "join .csv files in current directory into one without downsampling",
 	Long: `join processes numerical data only. Files must have
 same number of columns and each may or may not have a header
 User may choose to sort values in ascending order using --sort-column flag.
+
+join does NOT downsample or modify data.
 
 	Example:
 
