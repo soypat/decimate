@@ -17,3 +17,4 @@
 .idea/*
 junk/*
 testdata/big.csv
+*.zip
