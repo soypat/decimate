@@ -13,8 +13,9 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-
 .idea/*
 junk/*
 testdata/big.csv
 *.zip
+# Test output files
+*_test.csv

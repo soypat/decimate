@@ -27,6 +27,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	sortByColumn   int
+	joinOutputName string
+	deleteRepeats  bool
+)
+
+func init() {
+	rootCmd.AddCommand(joinCmd)
+	joinCmd.Flags().BoolVarP(&deleteRepeats, "delete-repeats","x", false, "Deletes repeated values.")
+	joinCmd.Flags().IntVar(&sortByColumn, "sort-column", 0, "Column to sort by. If 0 does not sort.")
+	joinCmd.Flags().StringVarP(&joinOutputName, "output", "o", "joined.csv", "Output name of joined file.")
+}
+
 // joinCmd represents the join command
 var joinCmd = &cobra.Command{
 	Use:   "join",
@@ -35,7 +48,7 @@ var joinCmd = &cobra.Command{
 same number of columns and each may or may not have a header
 User may choose to sort values in ascending order using --sort-column flag.
 
-join does NOT downsample or modify data.
+join does NOT downsample or modify data unless delete-repeats flag is called.
 
 	Example:
 
@@ -43,16 +56,18 @@ decimate join -o new.csv --sort-column 3 *
 
 Asterisk joins all files in directory. Columns start at 1.
 `,
-Args: func(cmd *cobra.Command, args []string) error {
-	if outputName == "" {
-		outputName = "joined.csv"
-	}
-	return nil
-},
+	Args: func(cmd *cobra.Command, args []string) error {
+		joinOutputName = replaceCutset(joinOutputName, badFilenameChar, "-")
+		if joinOutputName == "" {
+			joinOutputName = "joined.csv"
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if args[0] == "*" && len(args) == 1{
+		if args[0] == "*" && len(args) == 1 {
 			args = getAllCsvNames()
 		}
+		fmt.Println("join starting")
 		if err := joiner(args); err != nil {
 			fmt.Print(err)
 			os.Exit(1)
@@ -61,8 +76,18 @@ Args: func(cmd *cobra.Command, args []string) error {
 	},
 }
 
+// delete repeated values helper struct
+type floatColumnSet map[string]bool
 
-
+func (s *floatColumnSet) attemptAdd(f []float64) bool {
+	representation := strings.Join(floats2Strings(f), "")
+	_, present := (*s)[representation]
+	if present {
+		return false
+	}
+	(*s)[representation] = true
+	return true
+}
 
 type floatCsv struct {
 	columns      []floatColumn
@@ -86,6 +111,7 @@ func (a byColumn) Less(i, j int) bool {
 func joiner(args []string) error {
 	var headers [][]string
 	var NumberOfColumns int
+	set := make(floatColumnSet)
 	csvObj := floatCsv{columns: []floatColumn{}}
 	for _, arg := range args {
 		fi, err := os.Open(arg)
@@ -106,6 +132,13 @@ func joiner(args []string) error {
 		}
 		for i, row := range records {
 			floatcol, err := strings2Floats(row)
+			// check if is repeated value if flag is up
+			if deleteRepeats {
+				allGood := set.attemptAdd(floatcol)
+				if !allGood {
+					continue
+				}
+			}
 			if NumberOfColumns == 0 {
 				NumberOfColumns = len(floatcol)
 			} else if NumberOfColumns != len(floatcol) {
@@ -120,7 +153,7 @@ func joiner(args []string) error {
 			})
 		}
 	}
-	fo, err := os.Create(outputName)
+	fo, err := os.Create(joinOutputName)
 	if err != nil {
 		return err
 	}
@@ -130,7 +163,7 @@ func joiner(args []string) error {
 	}
 	w := csv.NewWriter(fo)
 	if len(csvObj.header) > 0 {
-		_=w.Write(csvObj.header)
+		_ = w.Write(csvObj.header)
 	}
 	for i := range csvObj.columns {
 		err = w.Write(floats2Strings(csvObj.columns[i].data))
@@ -169,18 +202,9 @@ func getAllCsvNames() []string {
 		panic(err)
 	}
 	for _, file := range files {
-		if strings.HasSuffix(file.Name(),".csv") && file.Name() != outputName{
+		if strings.HasSuffix(file.Name(), ".csv") && file.Name() != joinOutputName {
 			fileNames = append(fileNames, file.Name())
 		}
 	}
 	return fileNames
-}
-
-var sortByColumn int
-
-
-func init() {
-	rootCmd.AddCommand(joinCmd)
-	joinCmd.Flags().IntVar(&sortByColumn, "sort-column", 0, "Column to sort by. If 0 does not sort.")
-	joinCmd.Flags().StringVarP(&outputName,"output", "o","joined.csv" , "Output name of joined file.")
 }

@@ -72,8 +72,10 @@ type job struct {
 	stepper
 }
 
+const badFilenameChar = "/\\:*?\"><|"
+
 func getJobName(j job) string {
-	sanitizedYname := replaceCutset(j.yname,"/\\:*?\"><|","-")
+	sanitizedYname := replaceCutset(j.yname, badFilenameChar, "-")
 	return outputName + "-" + sanitizedYname + "." + outputExtension
 }
 
@@ -198,8 +200,8 @@ func checkParameters(args []string) error {
 		fmt.Printf("args: %v", args)
 		return errors.New("requires exactly one argument as input filename")
 	}
-	if _,err :=os.Stat(args[0]); err != nil {
-		return fmt.Errorf("opening %s. %s",args[0],err)
+	if _, err := os.Stat(args[0]); err != nil {
+		return fmt.Errorf("opening %s. %s", args[0], err)
 	}
 	// y columns
 	ycols := splitColumns(yFlag)
@@ -299,14 +301,14 @@ func isNumerical(s string) bool {
 	return err == nil
 }
 
-func replaceCutset(str , oldcut, new string) string {
-	oldies := make(map[rune]bool,len(oldcut))
+func replaceCutset(str, oldcut, new string) string {
+	oldies := make(map[rune]bool, len(oldcut))
 	for _, r := range oldcut {
 		oldies[r] = true
 	}
 	var newString string
 	for _, v := range str {
-		_,present := oldies[v]
+		_, present := oldies[v]
 		if present {
 			newString += new
 		} else {
