@@ -73,7 +73,8 @@ type job struct {
 }
 
 func getJobName(j job) string {
-	return outputName + "-" + j.yname + "." + outputExtension
+	sanitizedYname := replaceCutset(j.yname,"/\\:*?\"><|","-")
+	return outputName + "-" + sanitizedYname + "." + outputExtension
 }
 
 func run(args []string) error {
@@ -197,6 +198,9 @@ func checkParameters(args []string) error {
 		fmt.Printf("args: %v", args)
 		return errors.New("requires exactly one argument as input filename")
 	}
+	if _,err :=os.Stat(args[0]); err != nil {
+		return fmt.Errorf("opening %s. %s",args[0],err)
+	}
 	// y columns
 	ycols := splitColumns(yFlag)
 	if len(ycols) < 1 || yFlag == "" {
@@ -293,4 +297,21 @@ func findNumerical(sli []string) int {
 func isNumerical(s string) bool {
 	_, err := strconv.ParseFloat(s, 32)
 	return err == nil
+}
+
+func replaceCutset(str , oldcut, new string) string {
+	oldies := make(map[rune]bool,len(oldcut))
+	for _, r := range oldcut {
+		oldies[r] = true
+	}
+	var newString string
+	for _, v := range str {
+		_,present := oldies[v]
+		if present {
+			newString += new
+		} else {
+			newString += string(v)
+		}
+	}
+	return newString
 }

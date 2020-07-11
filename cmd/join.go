@@ -183,5 +183,4 @@ func init() {
 	rootCmd.AddCommand(joinCmd)
 	joinCmd.Flags().IntVar(&sortByColumn, "sort-column", 0, "Column to sort by. If 0 does not sort.")
 	joinCmd.Flags().StringVarP(&outputName,"output", "o","joined.csv" , "Output name of joined file.")
-
 }
