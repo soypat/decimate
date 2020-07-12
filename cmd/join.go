@@ -190,7 +190,7 @@ func strings2Floats(S []string) ([]float64, error) {
 func floats2Strings(F []float64) []string {
 	S := make([]string, len(F))
 	for i, f := range F {
-		S[i] = fmt.Sprintf("%f", f)
+		S[i] = fmt.Sprintf("%e", f)
 	}
 	return S
 }

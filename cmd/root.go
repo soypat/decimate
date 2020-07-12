@@ -233,16 +233,16 @@ func checkParameters(args []string) error {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&outputName, "output", "o", "", "Output filename. Will have name of y column and input's extension unless otherwise specified.")
+	rootCmd.Flags().StringVarP(&outputName, "output", "o", "", "Output filename. Named after ycolumn. Extension by default is input file's")
 	rootCmd.Flags().StringVarP(&floatFormat, "fformat", "f", "%e", "Floating point format")
 	rootCmd.Flags().BoolVarP(&enforceComma, "comma", "c", false, "Force output to use comma as delimiter")
 	rootCmd.Flags().StringVarP(&inputSeparator, "delimiter", "d", ",", "Delimiter token. Examples: '-d \\t' or '-d=\";\"'")
 	rootCmd.Flags().Float64VarP(&tolerance, "tolerance", "t", 0.1, "Downsampling y-value tolerance.")
-	rootCmd.Flags().StringVarP(&yFlag, "ycols", "y", "", "Y column names. Pass -y=\"*\" to process all columns. Separate with delimiter token (required)")
+	rootCmd.Flags().StringVarP(&yFlag, "ycols", "y", "", "Y column names separated by delimiter. Pass -y=\"*\" to process all columns (required)")
 	_ = rootCmd.MarkFlagRequired("ycols")
 	rootCmd.Flags().StringVarP(&xFlag, "xcol", "x", "", "X column name (required)")
 	_ = rootCmd.MarkFlagRequired("xcol")
-	rootCmd.Flags().BoolVarP(&interp, "interp", "i", false, "Use interpolator algorithm. Downsampling is more aggressive at the cost of changing point y values")
+	rootCmd.Flags().BoolVarP(&interp, "interp", "i", false, "Use more aggressive interpolating algorithm. Changes y values")
 	rootCmd.Flags().BoolVarP(&silent, "silent", "s", false, "Silent execution (no printing).")
 	rootCmd.Flags().BoolVarP(&noHeader, "headerless", "n", false, "If set does not print headers in new file.")
 }
