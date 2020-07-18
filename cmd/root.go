@@ -135,7 +135,7 @@ func run(args []string) error {
 			j.Writer.Comma = rune(inputSeparator[0])
 		}
 		if !noHeader {
-			err = j.Write([]string{j.yname, j.xname})
+			err = j.Write([]string{j.xname, j.yname})
 		}
 		if err != nil {
 			return err
