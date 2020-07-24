@@ -11,3 +11,4 @@ mkbin:
 test:
 	./decimate.exe -x x -y y testdata/t.csv
 	./decimate.exe -x a,b -y ,, testdata/a.tsv
+clean: rm ${binname}.zip

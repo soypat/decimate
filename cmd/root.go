@@ -37,7 +37,8 @@ var rootCmd = &cobra.Command{
 	Long: `Decimator is a tool for downsampling
 (also known as decimating) numerical data.
 Generates decimated files from a token separated
-file for use in plotting tools.
+file for use in plotting tools. Column numbering
+starts at 1.
 
 Examples:
 
@@ -49,7 +50,7 @@ named 'x', 'y' and 'z'.
 	decimate -x time -y "*" -d tab aFile.tsv
 
 Operates on the time x-column and all y-columns of a
-tab separated file.
+tab separated file. 
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkParameters(args); err != nil {
@@ -92,6 +93,26 @@ func run(args []string) error {
 		return fmt.Errorf("numerical header entry found: %s", headers[findNumerical(headers)])
 	}
 	yColsSplit := splitColumns(yFlag)
+	// Column number replacer
+	if colNum, err := strconv.Atoi(xFlag); err == nil && colNum > 0{
+		if colNum > len(headers) || colNum == 0 {
+			return fmt.Errorf("x column number %d too large or zero. Have %d headers",colNum,len(headers))
+		}
+		xFlag = headers[colNum-1]
+	}
+	for _, h := range headers {
+		if h != xFlag {
+			for i, y := range yColsSplit {
+				colNum, err := strconv.Atoi(y)
+				if err == nil && colNum > 0 {
+					if colNum > len(headers) || colNum == 0 {
+						return fmt.Errorf("y column number %d too large or zero. Have %d headers",colNum,len(headers))
+					}
+					yColsSplit[i] = headers[colNum-1]
+				}
+			}
+		}
+	}
 	// if we are looking for all columns, "*" as -y flag
 	if yColsSplit[0] == "*" && len(yColsSplit) == 1 {
 		yColsSplit = []string{}
@@ -103,7 +124,7 @@ func run(args []string) error {
 	}
 	var yxIdx []int
 	for _, v := range append(yColsSplit, xFlag) {
-		i := findStringInSlice(headers, v)
+		i := findStringInSlice(v, headers)
 		if i < 0 {
 			return fmt.Errorf("%s is not in columns:\n%v", v, headers)
 		}
@@ -205,8 +226,10 @@ func checkParameters(args []string) error {
 	}
 	// y columns
 	ycols := splitColumns(yFlag)
-	if len(ycols) < 1 || yFlag == "" {
+	if len(ycols) < 1 || yFlag == ""  {
 		return errors.New("found no y-column flag value")
+	} else if findStringInSlice(xFlag,ycols) >= 0 {
+		return errors.New("found x-column name/number within y-column values")
 	}
 	// Delimiters
 	if strings.TrimSuffix(inputSeparator, "s") == "tab" || inputSeparator == "\\t" {
@@ -238,16 +261,18 @@ func init() {
 	rootCmd.Flags().BoolVarP(&enforceComma, "comma", "c", false, "Force output to use comma as delimiter")
 	rootCmd.Flags().StringVarP(&inputSeparator, "delimiter", "d", ",", "Delimiter token. Examples: '-d \\t' or '-d=\";\"'")
 	rootCmd.Flags().Float64VarP(&tolerance, "tolerance", "t", 0.1, "Downsampling y-value tolerance.")
-	rootCmd.Flags().StringVarP(&yFlag, "ycols", "y", "", "Y column names separated by delimiter. Pass -y=\"*\" to process all columns (required)")
+	rootCmd.Flags().StringVarP(&yFlag, "ycols", "y", "", "Y column names/numbers separated by delimiter. Numbering starts at 1. Pass -y=\"*\" to process all columns (required)")
 	_ = rootCmd.MarkFlagRequired("ycols")
-	rootCmd.Flags().StringVarP(&xFlag, "xcol", "x", "", "X column name (required)")
+	rootCmd.Flags().StringVarP(&xFlag, "xcol", "x", "", "X column name. May be column number starting at 1. (required)")
 	_ = rootCmd.MarkFlagRequired("xcol")
 	rootCmd.Flags().BoolVarP(&interp, "interp", "i", false, "Use more aggressive interpolating algorithm. Changes y values")
 	rootCmd.Flags().BoolVarP(&silent, "silent", "s", false, "Silent execution (no printing).")
 	rootCmd.Flags().BoolVarP(&noHeader, "headerless", "n", false, "If set does not print headers in new file.")
 }
 
-func findStringInSlice(sli []string, s string) int {
+// returns -1 if string not found.
+// else returns index in slice
+func findStringInSlice( s string, sli []string,) int {
 	for i, v := range sli {
 		if v == s {
 			return i
