@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,12 +31,13 @@ import (
 var (
 	sortByColumn   int
 	joinOutputName string
+	joinOutputDir  string
 	deleteRepeats  bool
 )
 
 func init() {
 	rootCmd.AddCommand(joinCmd)
-	joinCmd.Flags().BoolVarP(&deleteRepeats, "delete-repeats","x", false, "Deletes repeated values.")
+	joinCmd.Flags().BoolVarP(&deleteRepeats, "delete-repeats", "x", false, "Deletes repeated values.")
 	joinCmd.Flags().IntVar(&sortByColumn, "sort-column", 0, "Column to sort by. If 0 does not sort.")
 	joinCmd.Flags().StringVarP(&joinOutputName, "output", "o", "joined.csv", "Output name of joined file.")
 }
@@ -57,6 +59,10 @@ decimate join -o new.csv --sort-column 3 *
 Asterisk joins all files in directory. Columns start at 1.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if strings.Contains(joinOutputName, string(filepath.Separator)) || strings.Contains(joinOutputName, "/") {
+			joinOutputDir = filepath.Dir(joinOutputName)
+			joinOutputName = discardPath(joinOutputName)
+		}
 		joinOutputName = replaceCutset(joinOutputName, badFilenameChar, "-")
 		if joinOutputName == "" {
 			joinOutputName = "joined.csv"
@@ -153,7 +159,7 @@ func joiner(args []string) error {
 			})
 		}
 	}
-	fo, err := os.Create(joinOutputName)
+	fo, err := os.Create(filepath.Join(joinOutputDir, joinOutputName))
 	if err != nil {
 		return err
 	}

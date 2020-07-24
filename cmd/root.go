@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 // flags
 var tolerance float64 = 0.1 // default for tests
-var xFlag, yFlag, inputSeparator, outputName, outputExtension, floatFormat string
+var xFlag, yFlag, inputSeparator, outputName, outputDir, outputExtension, floatFormat string
 var interp, enforceComma, silent, noHeader bool
 
 // rootCmd represents the base command when called without any subcommands
@@ -77,7 +78,7 @@ const badFilenameChar = "/\\:*?\"><|"
 
 func getJobName(j job) string {
 	sanitizedYname := replaceCutset(j.yname, badFilenameChar, "-")
-	return outputName + "-" + sanitizedYname + "." + outputExtension
+	return filepath.Join(outputDir, outputName+"-"+sanitizedYname+"."+outputExtension)
 }
 
 func run(args []string) error {
@@ -94,9 +95,9 @@ func run(args []string) error {
 	}
 	yColsSplit := splitColumns(yFlag)
 	// Column number replacer
-	if colNum, err := strconv.Atoi(xFlag); err == nil && colNum > 0{
+	if colNum, err := strconv.Atoi(xFlag); err == nil && colNum > 0 {
 		if colNum > len(headers) || colNum == 0 {
-			return fmt.Errorf("x column number %d too large or zero. Have %d headers",colNum,len(headers))
+			return fmt.Errorf("x column number %d too large or zero. Have %d headers", colNum, len(headers))
 		}
 		xFlag = headers[colNum-1]
 	}
@@ -106,7 +107,7 @@ func run(args []string) error {
 				colNum, err := strconv.Atoi(y)
 				if err == nil && colNum > 0 {
 					if colNum > len(headers) || colNum == 0 {
-						return fmt.Errorf("y column number %d too large or zero. Have %d headers",colNum,len(headers))
+						return fmt.Errorf("y column number %d too large or zero. Have %d headers", colNum, len(headers))
 					}
 					yColsSplit[i] = headers[colNum-1]
 				}
@@ -226,9 +227,9 @@ func checkParameters(args []string) error {
 	}
 	// y columns
 	ycols := splitColumns(yFlag)
-	if len(ycols) < 1 || yFlag == ""  {
+	if len(ycols) < 1 || yFlag == "" {
 		return errors.New("found no y-column flag value")
-	} else if findStringInSlice(xFlag,ycols) >= 0 {
+	} else if findStringInSlice(xFlag, ycols) >= 0 {
 		return errors.New("found x-column name/number within y-column values")
 	}
 	// Delimiters
@@ -240,6 +241,10 @@ func checkParameters(args []string) error {
 		return errors.New("delimiter should be one character. '\\t' and 'tab' work as an option")
 	}
 	var iname string
+	if strings.Contains(outputName, string(filepath.Separator)) || strings.Contains(outputName, "/") {
+		outputDir = filepath.Dir(outputName)
+		outputName = discardPath(outputName)
+	}
 	outputName, outputExtension = splitFileExtension(outputName)
 	if outputExtension == "" || outputExtension == "<inputExtension>" {
 		iname, outputExtension = splitFileExtension(discardPath(args[0]))
@@ -272,7 +277,7 @@ func init() {
 
 // returns -1 if string not found.
 // else returns index in slice
-func findStringInSlice( s string, sli []string,) int {
+func findStringInSlice(s string, sli []string, ) int {
 	for i, v := range sli {
 		if v == s {
 			return i
