@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -39,12 +40,13 @@ func init() {
 	rootCmd.AddCommand(joinCmd)
 	joinCmd.Flags().BoolVarP(&deleteRepeats, "delete-repeats", "x", false, "Deletes repeated values.")
 	joinCmd.Flags().IntVar(&sortByColumn, "sort-column", 0, "Column to sort by. If 0 does not sort.")
+	joinCmd.Flags().StringVarP(&inputSeparator, "delimiter", "d", ",", "Delimiter.")
 	joinCmd.Flags().StringVarP(&joinOutputName, "output", "o", "joined.csv", "Output name of joined file.")
 }
 
 // joinCmd represents the join command
 var joinCmd = &cobra.Command{
-	Use:   "join",
+	Use:   "join [filenames...]",
 	Short: "join .csv files in current directory into one without downsampling",
 	Long: `join processes numerical data only. Files must have
 same number of columns and each may or may not have a header
@@ -54,7 +56,7 @@ join does NOT downsample or modify data unless delete-repeats flag is called.
 
 	Example:
 
-decimate join -o new.csv --sort-column 3 *
+decimate -d , join -o new.csv --sort-column 3 *
 
 Asterisk joins all files in directory. Columns start at 1.
 `,
@@ -62,6 +64,12 @@ Asterisk joins all files in directory. Columns start at 1.
 		if strings.Contains(joinOutputName, string(filepath.Separator)) || strings.Contains(joinOutputName, "/") {
 			joinOutputDir = filepath.Dir(joinOutputName)
 			joinOutputName = discardPath(joinOutputName)
+		}
+		if inputSeparator == "\\t" || inputSeparator == "tab" {
+			inputSeparator = "\t"
+		}
+		if len(inputSeparator) != 1  {
+			return errors.New("Delimiter should be one character long!")
 		}
 		joinOutputName = replaceCutset(joinOutputName, badFilenameChar, "-")
 		if joinOutputName == "" {
@@ -126,6 +134,7 @@ func joiner(args []string) error {
 		}
 		defer fi.Close()
 		r := csv.NewReader(fi)
+		r.Comma = rune(inputSeparator[0])
 		records, err := r.ReadAll()
 		if err != nil {
 			return err

@@ -237,7 +237,7 @@ func checkParameters(args []string) error {
 		yFlag = strings.ReplaceAll(yFlag, "\\t", "\t")
 		inputSeparator = "\t"
 	}
-	if len(inputSeparator) > 1 {
+	if len(inputSeparator) != 1 {
 		return errors.New("delimiter should be one character. '\\t' and 'tab' work as an option")
 	}
 	var iname string
@@ -254,15 +254,15 @@ func checkParameters(args []string) error {
 	}
 	// formatter
 	const floatNum = .125
-	if num, err := strconv.ParseFloat(fmt.Sprintf(floatFormat, floatNum), 64); num != floatNum || err != nil {
-		return errors.New("formatting option yielded error. example of usage: \n'%0.2f' for two decimal placed\n'%e' for scientific notation")
+	if _, err := strconv.ParseFloat(fmt.Sprintf(floatFormat, floatNum), 64); err != nil {
+		return errors.New("formatting option yielded error. example of usage: \n'%0.2f' for two decimal placed\n'%e' for scientific notation\nError: "+err.Error())
 	}
 	return nil
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(&outputName, "output", "o", "", "Output filename. Named after ycolumn. Extension by default is input file's")
-	rootCmd.Flags().StringVarP(&floatFormat, "fformat", "f", "%e", "Floating point format")
+	rootCmd.Flags().StringVarP(&floatFormat, "fformat", "f", "%.6e", "Floating point format")
 	rootCmd.Flags().BoolVarP(&enforceComma, "comma", "c", false, "Force output to use comma as delimiter")
 	rootCmd.Flags().StringVarP(&inputSeparator, "delimiter", "d", ",", "Delimiter token. Examples: '-d \\t' or '-d=\";\"'")
 	rootCmd.Flags().Float64VarP(&tolerance, "tolerance", "t", 0.1, "Downsampling y-value tolerance.")
