@@ -15,3 +15,16 @@ Above is graphed data from a 134MB file (8.4 million data entries). Following im
 ![Less data points but identical to above](_assets/smolbig.png)
 
 Data has been reduced over twohundredfold.
+
+## Installation
+
+You can download the latest release from https://github.com/soypat/decimate/releases.
+
+If you prefer to build from source you'll need to install Go. Once installed run
+
+```console
+go build .
+``` 
+
+in the directory and a binary should be generated shortly.
+
