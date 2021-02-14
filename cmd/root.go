@@ -1,29 +1,15 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // flags
@@ -90,41 +76,19 @@ func run(args []string) error {
 	rdr.Comma = rune(inputSeparator[0])
 	rdr.TrimLeadingSpace = true
 	headers, err := rdr.Read()
+	if err != nil {
+		return err
+	}
 	if findNumerical(headers) >= 0 {
 		return fmt.Errorf("numerical header entry found: %s", headers[findNumerical(headers)])
 	}
-	yColsSplit := splitColumns(yFlag)
-	// Column number replacer
-	if colNum, err := strconv.Atoi(xFlag); err == nil && colNum > 0 {
-		if colNum > len(headers) || colNum == 0 {
-			return fmt.Errorf("x column number %d too large or zero. Have %d headers", colNum, len(headers))
-		}
-		xFlag = headers[colNum-1]
+	var yColNames []string
+	if yColNames, err = parseHeader(headers); err != nil {
+		return err
 	}
-	for _, h := range headers {
-		if h != xFlag {
-			for i, y := range yColsSplit {
-				colNum, err := strconv.Atoi(y)
-				if err == nil && colNum > 0 {
-					if colNum > len(headers) || colNum == 0 {
-						return fmt.Errorf("y column number %d too large or zero. Have %d headers", colNum, len(headers))
-					}
-					yColsSplit[i] = headers[colNum-1]
-				}
-			}
-		}
-	}
-	// if we are looking for all columns, "*" as -y flag
-	if yColsSplit[0] == "*" && len(yColsSplit) == 1 {
-		yColsSplit = []string{}
-		for _, h := range headers {
-			if h != xFlag {
-				yColsSplit = append(yColsSplit, h)
-			}
-		}
-	}
+
 	var yxIdx []int
-	for _, v := range append(yColsSplit, xFlag) {
+	for _, v := range append(yColNames, xFlag) {
 		i := findStringInSlice(v, headers)
 		if i < 0 {
 			return fmt.Errorf("%s is not in columns:\n%v", v, headers)
@@ -133,7 +97,7 @@ func run(args []string) error {
 	}
 	// we have as many files to create as y columns given
 	var jobs []*job
-	for i := 0; i < len(yColsSplit); i++ {
+	for i := 0; i < len(yColNames); i++ {
 		var algorithm stepper
 		if interp {
 			algorithm = interpStepper{}
@@ -142,7 +106,7 @@ func run(args []string) error {
 		}
 		j := job{
 			xname:     xFlag,
-			yname:     yColsSplit[i],
+			yname:     yColNames[i],
 			tolerance: tolerance,
 			stepper:   algorithm,
 		}
@@ -182,7 +146,7 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		for i := 0; i < len(yColsSplit); i++ {
+		for i := 0; i < len(yColNames); i++ {
 			y, err := strconv.ParseFloat(record[yxIdx[i]], 64)
 			if err != nil {
 				return err
@@ -197,6 +161,40 @@ func run(args []string) error {
 	}
 
 	return nil
+}
+
+func parseHeader(headers []string) ([]string, error) {
+	yColsSplit := splitColumns(yFlag)
+	// Column number replacer
+	if colNum, err := strconv.Atoi(xFlag); err == nil && colNum > 0 {
+		if colNum > len(headers) || colNum == 0 {
+			return nil, fmt.Errorf("x column number %d too large or zero. Have %d headers", colNum, len(headers))
+		}
+		xFlag = headers[colNum-1]
+	}
+	for _, h := range headers {
+		if h != xFlag {
+			for i, y := range yColsSplit {
+				colNum, err := strconv.Atoi(y)
+				if err == nil && colNum > 0 {
+					if colNum > len(headers) || colNum == 0 {
+						return nil, fmt.Errorf("y column number %d too large or zero. Have %d headers", colNum, len(headers))
+					}
+					yColsSplit[i] = headers[colNum-1]
+				}
+			}
+		}
+	}
+	// if we are looking for all columns, "*" as -y flag
+	if yColsSplit[0] == "*" && len(yColsSplit) == 1 {
+		yColsSplit = []string{}
+		for _, h := range headers {
+			if h != xFlag {
+				yColsSplit = append(yColsSplit, h)
+			}
+		}
+	}
+	return yColsSplit, nil
 }
 
 func NaNslice(n int) (nans []string) {
@@ -255,7 +253,7 @@ func checkParameters(args []string) error {
 	// formatter
 	const floatNum = .125
 	if _, err := strconv.ParseFloat(fmt.Sprintf(floatFormat, floatNum), 64); err != nil {
-		return errors.New("formatting option yielded error. example of usage: \n'%0.2f' for two decimal placed\n'%e' for scientific notation\nError: "+err.Error())
+		return errors.New("formatting option yielded error. example of usage: \n'%0.2f' for two decimal placed\n'%e' for scientific notation\nError: " + err.Error())
 	}
 	return nil
 }
@@ -277,7 +275,7 @@ func init() {
 
 // returns -1 if string not found.
 // else returns index in slice
-func findStringInSlice(s string, sli []string, ) int {
+func findStringInSlice(s string, sli []string) int {
 	for i, v := range sli {
 		if v == s {
 			return i

@@ -1,4 +1,3 @@
-// Algorithms file file
 package cmd
 
 import (
@@ -7,13 +6,13 @@ import (
 )
 
 type stepper interface {
-	step(x,y float64) stepper
+	step(x, y float64) stepper
 	values(format string) []string
 	ready() bool
 }
 
 type inPlaceStepper struct {
-	xsaved, ysaved float64 // saved values for printing
+	xsaved, ysaved               float64 // saved values for printing
 	xstart, ystart, xprev, yprev float64
 	anglemin, anglemax           float64
 	stepNo                       int
@@ -21,7 +20,7 @@ type inPlaceStepper struct {
 }
 
 func (a inPlaceStepper) values(format string) []string {
-	return []string{fmt.Sprintf(format,a.xstart),fmt.Sprintf(format,a.ystart)}
+	return []string{fmt.Sprintf(format, a.xstart), fmt.Sprintf(format, a.ystart)}
 }
 
 func (a inPlaceStepper) ready() bool {
@@ -42,7 +41,7 @@ func (a inPlaceStepper) step(x, y float64) stepper {
 		a.anglemin, a.anglemax = loangle, hiangle
 	}
 	// condition set to trigger on NaN too
-	if !(angle >= a.anglemin) || !(angle <= a.anglemax) { // Finding a value steps our algoritm twice
+	if !(angle >= a.anglemin) || !(angle <= a.anglemax) { // Finding a value steps our algorithm twice
 		a.xstart, a.ystart, a.xprev, a.yprev = a.xprev, a.yprev, x, y
 		Dx, Dy = x-a.xstart, y-a.ystart
 		a.anglemin, a.anglemax = math.Atan2(Dy-tolerance, Dx), math.Atan2(Dy+tolerance, Dx)
@@ -63,7 +62,6 @@ func (a inPlaceStepper) step(x, y float64) stepper {
 
 // Interpolator
 type interpStepper struct {
-
 	xstart, ystart, xprev, yprev float64
 	anglemin, anglemax           float64
 	stepNo                       int
@@ -84,8 +82,8 @@ func (a interpStepper) step(x, y float64) stepper {
 		a.anglemin, a.anglemax = loangle, hiangle
 	}
 	// should admit NaN values
-	if !(a.anglemax >= loangle ) || !(a.anglemin <= hiangle) { // Finding a value steps our algoritm twice
-		a.ystart = a.ystart + (a.xprev - a.xstart) * (math.Tan(a.anglemax) + math.Tan(a.anglemin)) / 2 // interpolator
+	if !(a.anglemax >= loangle) || !(a.anglemin <= hiangle) { // Finding a value steps our algorithm twice
+		a.ystart = a.ystart + (a.xprev-a.xstart)*(math.Tan(a.anglemax)+math.Tan(a.anglemin))/2 // interpolator
 		a.xstart, a.xprev, a.yprev = a.xprev, x, y
 		Dx, Dy = x-a.xstart, y-a.ystart
 		a.anglemin, a.anglemax = math.Atan2(Dy-tolerance, Dx), math.Atan2(Dy+tolerance, Dx)
@@ -105,7 +103,7 @@ func (a interpStepper) step(x, y float64) stepper {
 }
 
 func (a interpStepper) values(format string) []string {
-	return []string{fmt.Sprintf(format,a.xstart),fmt.Sprintf(format,a.ystart)}
+	return []string{fmt.Sprintf(format, a.xstart), fmt.Sprintf(format, a.ystart)}
 }
 
 func (a interpStepper) ready() bool {
